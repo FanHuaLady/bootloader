@@ -35,11 +35,15 @@ uint16_t GetPacketLength(UCB_URxBuffptr *packet)
     if(index >= NUM || !U0CB.packetValid[index] || packet->start == NULL || packet->end == NULL)
         return 0;
     
+    // 计算起始和结束索引
+    uint32_t start_idx = packet->start - U0_RxBuff;
+    uint32_t end_idx = packet->end - U0_RxBuff;
+    
     // 处理缓冲区环绕的情况
-    if(packet->end >= packet->start)
-        return packet->end - packet->start + 1;
+    if(end_idx >= start_idx)
+        return end_idx - start_idx + 1;
     else
-        return (U0_RxBuff + U0_RX_SIZE - packet->start) + (packet->end - U0_RxBuff + 1);
+        return (U0_RX_SIZE - start_idx) + end_idx + 1;
 }
 
 // 绘制串口数据页面
@@ -138,10 +142,11 @@ void Draw_Serial_Page(void)
 
 // 打印当前所有有效数据包的内容（支持十六进制+字符双格式显示）
 // 打印当前所有有效数据包的内容（支持十六进制+字符双格式显示）
+// 简化版：只显示数据内容
 void Test_PrintReceivedData(void)
 {
     uint8_t i;
-    uint8_t temp_buf[U0_RX_MAX + 1]; // 使用U0_RX_MAX而不是U0_RX_SIZE
+    uint8_t temp_buf[U0_RX_MAX + 1];
     uint8_t has_valid = 0;
 
     // 遍历所有数据包
@@ -158,15 +163,13 @@ void Test_PrintReceivedData(void)
             // 清空临时缓冲区
             memset(temp_buf, 0, sizeof(temp_buf));
 
-            // 读取数据包内容到临时缓冲区（处理环形边界）
+            // 读取数据包内容到临时缓冲区
             if (start_ptr <= end_ptr)
             {
                 // 数据连续（无跨缓冲区）
-                while (read_cnt < data_len && read_cnt < U0_RX_MAX)
+                while (start_ptr <= end_ptr && read_cnt < sizeof(temp_buf) - 1)
                 {
-                    temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
-                                         *start_ptr == '\r' || *start_ptr == '\n') 
-                                        ? *start_ptr : ' ';
+                    temp_buf[read_cnt] = *start_ptr;
                     start_ptr++;
                     read_cnt++;
                 }
@@ -175,22 +178,18 @@ void Test_PrintReceivedData(void)
             {
                 // 数据跨缓冲区（先读至缓冲区末尾）
                 uint8_t *buf_end = U0_RxBuff + U0_RX_SIZE - 1;
-                while (start_ptr <= buf_end && read_cnt < data_len && read_cnt < U0_RX_MAX)
+                while (start_ptr <= buf_end && read_cnt < sizeof(temp_buf) - 1)
                 {
-                    temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
-                                         *start_ptr == '\r' || *start_ptr == '\n') 
-                                        ? *start_ptr : ' ';
+                    temp_buf[read_cnt] = *start_ptr;
                     start_ptr++;
                     read_cnt++;
                 }
                 
                 // 再从缓冲区开头读至end
                 start_ptr = U0_RxBuff;
-                while (start_ptr <= end_ptr && read_cnt < data_len && read_cnt < U0_RX_MAX)
+                while (start_ptr <= end_ptr && read_cnt < sizeof(temp_buf) - 1)
                 {
-                    temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
-                                         *start_ptr == '\r' || *start_ptr == '\n') 
-                                        ? *start_ptr : ' ';
+                    temp_buf[read_cnt] = *start_ptr;
                     start_ptr++;
                     read_cnt++;
                 }
@@ -199,8 +198,17 @@ void Test_PrintReceivedData(void)
             // 确保字符串以null结尾
             temp_buf[read_cnt] = '\0';
 
-            // 打印简洁格式：索引: 内容
-            printf("%d: %s\r\n", i, temp_buf);
+            // 只打印数据内容，将非可打印字符替换为点
+            printf("Packet %d: ", i);
+            for(uint16_t j = 0; j < read_cnt; j++)
+            {
+                if(temp_buf[j] >= 0x20 && temp_buf[j] <= 0x7E)
+                    printf("%c", temp_buf[j]);
+                else
+                    printf(".");
+            }
+            printf("\r\n");
+            
             has_valid = 1;
         }
     }

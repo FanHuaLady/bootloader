@@ -5,6 +5,8 @@
 UCB_CB U0CB;                                                                // 管理变量
 uint8_t U0_RxBuff[U0_RX_SIZE];                                              // 数据缓冲区2048
 
+uint32_t last_dma_pos = 0; // 记录上一次DMA的位置
+
 void U0Rx_PtrInit(void)
 {
     U0CB.URxDataIN = &U0CB.URxDataPtr[0];
@@ -76,16 +78,18 @@ void Serial_Init(void)
     DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&USART1->DR;
     DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)U0_RxBuff;
     DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralSRC;
-    DMA_InitStruct.DMA_BufferSize = U0_RX_MAX;
+    DMA_InitStruct.DMA_BufferSize = U0_RX_SIZE;  // 改为整个缓冲区大小
     DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
     DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
     DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
     DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Circular;  // 循环模式
     DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;
     DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
     DMA_Init(DMA1_Channel5, &DMA_InitStruct);
     
+    last_dma_pos = 0;
+
     DMA_Cmd(DMA1_Channel5, ENABLE);
     USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
     USART_Cmd(USART1, ENABLE);
@@ -120,6 +124,8 @@ int fputc(int ch, FILE *f)
 }
 
 // 串口空闲中断
+// 在全局变量中添加
+
 void USART1_IRQHandler(void)
 {
     if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
@@ -132,13 +138,34 @@ void USART1_IRQHandler(void)
         uint16_t remaining = DMA_GetCurrDataCounter(DMA1_Channel5);
         DMA_Cmd(DMA1_Channel5, ENABLE);
         
-        uint16_t received = U0_RX_MAX - remaining;  // 修改为U0_RX_MAX
+        // 计算当前DMA位置
+        uint32_t current_dma_pos = (U0_RX_SIZE - remaining) % U0_RX_SIZE;
+        
+        // 计算接收到的数据长度
+        uint16_t received;
+        if(current_dma_pos >= last_dma_pos)
+            received = current_dma_pos - last_dma_pos;
+        else
+            received = U0_RX_SIZE - last_dma_pos + current_dma_pos;
+        
+        // 如果接收到的数据长度为0，直接返回
+        if(received == 0)
+        {
+            last_dma_pos = current_dma_pos;
+            return;
+        }
         
         uint8_t currentIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
         U0CB.packetValid[currentIndex] = 1;
         
-        U0CB.URxDataIN->end = &U0_RxBuff[(U0CB.URxCounter + received - 1) % U0_RX_SIZE];
+        // 设置数据包起始和结束位置
+        U0CB.URxDataIN->start = &U0_RxBuff[last_dma_pos];
         
+        // 计算结束位置
+        uint32_t end_pos = (last_dma_pos + received - 1) % U0_RX_SIZE;
+        U0CB.URxDataIN->end = &U0_RxBuff[end_pos];
+        
+        // 更新全局计数器
         U0CB.URxCounter = (U0CB.URxCounter + received) % U0_RX_SIZE;
         
         // 检查下一个数据包位置是否已经被使用
@@ -155,20 +182,18 @@ void USART1_IRQHandler(void)
             }
         }
         
+        // 移动输入指针
         U0CB.URxDataIN++;
         if(U0CB.URxDataIN > U0CB.URxDataEND)
             U0CB.URxDataIN = &U0CB.URxDataPtr[0];
         
         U0CB.nextPacketIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
         
-        U0CB.URxDataIN->start = &U0_RxBuff[U0CB.URxCounter];
+        // 更新最后一个DMA位置
+        last_dma_pos = current_dma_pos;
         
-        // 重置DMA
-        DMA_Cmd(DMA1_Channel5, DISABLE);
-        DMA1_Channel5->CMAR = (uint32_t)&U0_RxBuff[U0CB.URxCounter];
-        DMA_SetCurrDataCounter(DMA1_Channel5, U0_RX_MAX);  // 修改为U0_RX_MAX
+        // 清除传输完成标志
         DMA_ClearFlag(DMA1_FLAG_TC5);
-        DMA_Cmd(DMA1_Channel5, ENABLE);
     }
 }
 
