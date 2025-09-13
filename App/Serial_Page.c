@@ -141,7 +141,7 @@ void Draw_Serial_Page(void)
 void Test_PrintReceivedData(void)
 {
     uint8_t i;
-    uint8_t temp_buf[U0_RX_MAX + 1];
+    uint8_t temp_buf[U0_RX_MAX + 1]; // 使用U0_RX_MAX而不是U0_RX_SIZE
     uint8_t has_valid = 0;
 
     // 遍历所有数据包
@@ -158,17 +158,11 @@ void Test_PrintReceivedData(void)
             // 清空临时缓冲区
             memset(temp_buf, 0, sizeof(temp_buf));
 
-            // 确保数据长度不超过缓冲区大小
-            if(data_len > U0_RX_MAX)
-            {
-                data_len = U0_RX_MAX;
-            }
-
             // 读取数据包内容到临时缓冲区（处理环形边界）
             if (start_ptr <= end_ptr)
             {
                 // 数据连续（无跨缓冲区）
-                while (read_cnt < data_len)
+                while (read_cnt < data_len && read_cnt < U0_RX_MAX)
                 {
                     temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
                                          *start_ptr == '\r' || *start_ptr == '\n') 
@@ -181,7 +175,7 @@ void Test_PrintReceivedData(void)
             {
                 // 数据跨缓冲区（先读至缓冲区末尾）
                 uint8_t *buf_end = U0_RxBuff + U0_RX_SIZE - 1;
-                while (start_ptr <= buf_end && read_cnt < data_len)
+                while (start_ptr <= buf_end && read_cnt < data_len && read_cnt < U0_RX_MAX)
                 {
                     temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
                                          *start_ptr == '\r' || *start_ptr == '\n') 
@@ -192,7 +186,7 @@ void Test_PrintReceivedData(void)
                 
                 // 再从缓冲区开头读至end
                 start_ptr = U0_RxBuff;
-                while (start_ptr <= end_ptr && read_cnt < data_len)
+                while (start_ptr <= end_ptr && read_cnt < data_len && read_cnt < U0_RX_MAX)
                 {
                     temp_buf[read_cnt] = ((*start_ptr >= 0x20 && *start_ptr <= 0x7E) || 
                                          *start_ptr == '\r' || *start_ptr == '\n') 

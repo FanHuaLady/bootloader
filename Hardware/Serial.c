@@ -127,46 +127,32 @@ void USART1_IRQHandler(void)
         volatile uint16_t temp = USART1->SR;
         temp = USART1->DR;
         
-        uint16_t remaining = DMA_GetCurrDataCounter(DMA1_Channel5);
-        uint16_t received = (U0_RX_MAX+1) - remaining;
+        uint16_t remaining = DMA_GetCurrDataCounter(DMA1_Channel5);                            // 获取DMA剩余未传输的字节数
+        uint16_t received = (U0_RX_MAX+1) - remaining;                                        // 实际接收字节数 = 总长度 - 剩余长度
         
-        uint8_t currentIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
-        U0CB.packetValid[currentIndex] = 1;
+        uint8_t currentIndex = U0CB.URxDataIN - U0CB.URxDataPtr;                            // 当前数据包索引
+        U0CB.packetValid[currentIndex] = 1;                                                    // 标记这个数据包有数据
         
-        U0CB.URxDataIN->end = &U0_RxBuff[(U0CB.URxCounter + received - 1) % U0_RX_SIZE];
+        U0CB.URxDataIN->end = &U0_RxBuff[(U0CB.URxCounter + received - 1) % U0_RX_SIZE];    // 计算结束地址
         
-        U0CB.URxCounter = (U0CB.URxCounter + received) % U0_RX_SIZE;
+        U0CB.URxCounter = (U0CB.URxCounter + received) % U0_RX_SIZE;                        // 更新总数据计数
         
-        // 检查下一个数据包位置是否已经被使用
-        uint8_t nextIndex = (currentIndex + 1) % NUM;
-        if(U0CB.packetValid[nextIndex])
-        {
-            // 如果下一个位置已经被使用，标记它为无效
-            U0CB.packetValid[nextIndex] = 0;
-            
-            // 如果这个被覆盖的数据包是URxDataOUT指向的，需要移动URxDataOUT
-            if(nextIndex == (U0CB.URxDataOUT - U0CB.URxDataPtr))
-            {
-                U0CB.URxDataOUT++;
-                if(U0CB.URxDataOUT > U0CB.URxDataEND)
-                    U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
-            }
-        }
-        
-        U0CB.URxDataIN++;
+        U0CB.URxDataIN++;                                                                    // 移动到下一个数据包位置
         if(U0CB.URxDataIN > U0CB.URxDataEND)
             U0CB.URxDataIN = &U0CB.URxDataPtr[0];
         
-        U0CB.nextPacketIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
+        U0CB.nextPacketIndex = U0CB.URxDataIN - U0CB.URxDataPtr;                            // 更新下一个数据包索引
         
-        U0CB.URxDataIN->start = &U0_RxBuff[U0CB.URxCounter];
+        U0CB.URxDataIN->start = &U0_RxBuff[U0CB.URxCounter];                                // 设置下一个数据包的起始位置
         
         // 重置DMA
         DMA_Cmd(DMA1_Channel5, DISABLE);
-        DMA1_Channel5->CMAR = (uint32_t)&U0_RxBuff[U0CB.URxCounter];
+        DMA1_Channel5->CMAR = (uint32_t)&U0_RxBuff[U0CB.URxCounter];  // 新增：设置DMA内存地址为当前空闲位置
         DMA_SetCurrDataCounter(DMA1_Channel5, U0_RX_MAX+1);
         DMA_ClearFlag(DMA1_FLAG_TC5);
         DMA_Cmd(DMA1_Channel5, ENABLE);
+		
+		//printf("IDLE Int: received=%d, counter=%d\n", received, U0CB.URxCounter);
     }
 }
 
