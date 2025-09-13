@@ -5,14 +5,40 @@
 UCB_CB U0CB;                                                                // 管理变量
 uint8_t U0_RxBuff[U0_RX_SIZE];                                              // 数据缓冲区2048
 
-// 数据管理初始化
 void U0Rx_PtrInit(void)
 {
     U0CB.URxDataIN = &U0CB.URxDataPtr[0];
     U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
     U0CB.URxDataEND = &U0CB.URxDataPtr[NUM-1];
-    U0CB.URxDataIN->start = U0_RxBuff;
     U0CB.URxCounter = 0;
+    U0CB.nextPacketIndex = 0;
+    
+    // 初始化所有数据包为无效状态
+    for(int i = 0; i < NUM; i++)
+    {
+        U0CB.URxDataPtr[i].start = NULL;
+        U0CB.URxDataPtr[i].end = NULL;
+        U0CB.packetValid[i] = 0;
+    }
+    
+    // 设置第一个数据包的起始位置
+    U0CB.URxDataIN->start = U0_RxBuff;
+}
+
+void MarkPacketProcessed(uint8_t index)
+{
+    if(index < NUM)
+    {
+        U0CB.packetValid[index] = 0;
+        
+        // 如果这是当前最早的数据包，移动URxDataOUT指针
+        if(index == (U0CB.URxDataOUT - U0CB.URxDataPtr))
+        {
+            U0CB.URxDataOUT++;
+            if(U0CB.URxDataOUT > U0CB.URxDataEND)
+                U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
+        }
+    }
 }
 
 void Serial_Init(void)
@@ -50,7 +76,7 @@ void Serial_Init(void)
     DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&USART1->DR;
     DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)U0_RxBuff;
     DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralSRC;
-    DMA_InitStruct.DMA_BufferSize = U0_RX_MAX+1;
+    DMA_InitStruct.DMA_BufferSize = U0_RX_MAX;
     DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
     DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
     DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -98,40 +124,49 @@ void USART1_IRQHandler(void)
 {
     if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
     {
-        volatile uint16_t temp = USART1->SR;  // 读状态寄存器
-        temp = USART1->DR;                    // 读数据寄存器以清除空闲中断标志
+        volatile uint16_t temp = USART1->SR;
+        temp = USART1->DR;
         
-        // 计算接收到的数据量
         uint16_t remaining = DMA_GetCurrDataCounter(DMA1_Channel5);
         uint16_t received = (U0_RX_MAX+1) - remaining;
         
-        U0CB.URxCounter += received;
-        U0CB.URxDataIN->end = &U0_RxBuff[U0CB.URxCounter-1];
+        uint8_t currentIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
+        U0CB.packetValid[currentIndex] = 1;
+        
+        U0CB.URxDataIN->end = &U0_RxBuff[(U0CB.URxCounter + received - 1) % U0_RX_SIZE];
+        
+        U0CB.URxCounter = (U0CB.URxCounter + received) % U0_RX_SIZE;
+        
+        // 检查下一个数据包位置是否已经被使用
+        uint8_t nextIndex = (currentIndex + 1) % NUM;
+        if(U0CB.packetValid[nextIndex])
+        {
+            // 如果下一个位置已经被使用，标记它为无效
+            U0CB.packetValid[nextIndex] = 0;
+            
+            // 如果这个被覆盖的数据包是URxDataOUT指向的，需要移动URxDataOUT
+            if(nextIndex == (U0CB.URxDataOUT - U0CB.URxDataPtr))
+            {
+                U0CB.URxDataOUT++;
+                if(U0CB.URxDataOUT > U0CB.URxDataEND)
+                    U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
+            }
+        }
+        
         U0CB.URxDataIN++;
-        
         if(U0CB.URxDataIN > U0CB.URxDataEND)
-        {
             U0CB.URxDataIN = &U0CB.URxDataPtr[0];
-            printf("使用数据管理成员达到上限\n");
-        }
         
-        if(U0_RX_SIZE - U0CB.URxCounter >= U0_RX_MAX)
-        {
-            U0CB.URxDataIN->start = &U0_RxBuff[U0CB.URxCounter];
-        }
-        else
-        {
-            U0CB.URxDataIN->start = U0_RxBuff;
-            U0CB.URxCounter = 0;
-            printf("计数清零\n");
-        }
+        U0CB.nextPacketIndex = U0CB.URxDataIN - U0CB.URxDataPtr;
         
+        U0CB.URxDataIN->start = &U0_RxBuff[U0CB.URxCounter];
+        
+        // 重置DMA
         DMA_Cmd(DMA1_Channel5, DISABLE);
+        DMA1_Channel5->CMAR = (uint32_t)&U0_RxBuff[U0CB.URxCounter];
         DMA_SetCurrDataCounter(DMA1_Channel5, U0_RX_MAX+1);
-        DMA_ClearFlag(DMA1_FLAG_TC5);  // 修改这里：只需要标志位参数
+        DMA_ClearFlag(DMA1_FLAG_TC5);
         DMA_Cmd(DMA1_Channel5, ENABLE);
-        
-        printf("当前数据总数为：%d\n", U0CB.URxCounter);
     }
 }
 

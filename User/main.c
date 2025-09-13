@@ -14,12 +14,6 @@ int main(void)
 	Serial_Page();
 	while(1)
 	{
-		OLED_ShowString(0,0,"test",OLED_8X16);
-		OLED_Update();
-		Delay_ms(1000);
 		
-		OLED_Clear();
-		OLED_Update();
-		Delay_ms(1000);
 	}
 }
