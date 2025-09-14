@@ -3,12 +3,14 @@
 #include "OLED.h"
 #include "Serial.h"
 #include "At24c02.h"
+#include "W25Q64.h"
 
 #include "Serial_Page.h"
 
 #include <stdio.h>
 
-uint8_t buf[256];
+uint8_t wbuf[256];
+uint8_t rbuf[256];
 
 int main(void)
 {
@@ -16,20 +18,7 @@ int main(void)
 	Serial_Init();
 	// Serial_Page();
 	AT24C02_Init();
-
-	for(uint16_t i = 0; i < 256; i++)
-	{
-		AT24C02_WriteByte(i, 255-i);
-		Delay_ms(5);
-	}
-
-	AT24C02_Read(0, buf, 256);
-
-	for(uint16_t i = 0; i < 256; i++)
-	{
-		printf("%d = %x\r\n", i, buf[i]);
-		Delay_ms(10);
-	}
+	W25Q64_Init();
 
 	while(1)
 	{
