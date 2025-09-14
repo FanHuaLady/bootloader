@@ -13,9 +13,9 @@
 #define STM32_B_PAGE_NUM		20                                                          // B区页数
 #define STM32_A_PAGE_NUM		STM32_PAGE_NUM - STM32_B_PAGE_NUM                           // A区页数
 #define STM32_A_SPAGE_PAGE      STM32_B_PAGE_NUM                                            // A区起始页编号
-#define STM32_A_SPAGE           STM32_FLASH_SADDR + STM32_A_SPAGE_PAGE * STM32_PAGE_SIZE    // A区起始地址
+#define STM32_A_SADDR           STM32_FLASH_SADDR + STM32_A_SPAGE_PAGE * STM32_PAGE_SIZE    // A区起始地址
 
-#define OTA_SET_FLAG            0xffffffff
+#define OTA_SET_FLAG            0xAABB1122
 
 typedef struct{
     uint32_t OTA_Flag;
