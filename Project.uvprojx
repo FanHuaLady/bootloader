@@ -674,6 +674,16 @@
               <FileType>5</FileType>
               <FilePath>.\System\Flash_Manage.h</FilePath>
             </File>
+            <File>
+              <FileName>boot.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\System\boot.c</FilePath>
+            </File>
+            <File>
+              <FileName>boot.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\System\boot.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -738,6 +748,11 @@
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\User\main.h</FilePath>
             </File>
             <File>
               <FileName>stm32f10x_conf.h</FileName>

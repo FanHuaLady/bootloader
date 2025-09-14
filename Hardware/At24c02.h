@@ -10,4 +10,6 @@ uint8_t AT24C02_WriteByte(uint8_t addr, uint8_t data);
 uint8_t AT24C02_WritePage(uint8_t addr, uint8_t *data);
 uint8_t AT24C02_Read(uint8_t addr, uint8_t *data, uint16_t len);
 
+void AT24C02_Read_OtaFlag(void);                    // 读取OTA标志
+
 #endif

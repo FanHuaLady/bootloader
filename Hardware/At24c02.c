@@ -1,5 +1,8 @@
 #include "At24c02.h"
 #include "Delay.h"
+#include "main.h"
+
+#include <string.h>
 
 void AT24C02_W_SCL(uint8_t BitValue)
 {
@@ -216,4 +219,12 @@ uint8_t AT24C02_Read(uint8_t addr, uint8_t *data, uint16_t len)
 void AT24C02_Init(void)
 {
 	AT24C02_GPIO_Init();
+}
+
+// --------------------------------------------------------------// 下面的代码用于BootLoader
+
+void AT24C02_Read_OtaFlag(void)
+{
+	memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
+	AT24C02_Read(0, (uint8_t*)&OTA_Info, OTA_INFOCB_SIZE);
 }
