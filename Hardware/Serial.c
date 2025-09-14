@@ -5,7 +5,7 @@
 UCB_CB U0CB;                                                                // 管理变量
 uint8_t U0_RxBuff[U0_RX_SIZE];                                              // 数据缓冲区2048
 
-uint32_t last_dma_pos = 0; // 记录上一次DMA的位置
+uint32_t last_dma_pos = 0;
 
 void U0Rx_PtrInit(void)
 {

@@ -699,6 +699,16 @@
               <FileType>5</FileType>
               <FilePath>.\Hardware\Serial.h</FilePath>
             </File>
+            <File>
+              <FileName>At24c02.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\At24c02.c</FilePath>
+            </File>
+            <File>
+              <FileName>At24c02.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\At24c02.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
