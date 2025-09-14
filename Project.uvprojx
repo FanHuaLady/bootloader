@@ -664,6 +664,16 @@
               <FileType>5</FileType>
               <FilePath>.\System\Delay.h</FilePath>
             </File>
+            <File>
+              <FileName>Flash_Manage.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\System\Flash_Manage.c</FilePath>
+            </File>
+            <File>
+              <FileName>Flash_Manage.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\System\Flash_Manage.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

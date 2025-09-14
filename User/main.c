@@ -4,13 +4,13 @@
 #include "Serial.h"
 #include "At24c02.h"
 #include "W25Q64.h"
+#include "Flash_Manage.h"
 
 #include "Serial_Page.h"
 
 #include <stdio.h>
 
-uint8_t wbuf[256];
-uint8_t rbuf[256];
+uint32_t wbuff[1024];
 
 int main(void)
 {
