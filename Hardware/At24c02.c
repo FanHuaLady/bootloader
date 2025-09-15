@@ -221,10 +221,22 @@ void AT24C02_Init(void)
 	AT24C02_GPIO_Init();
 }
 
-// --------------------------------------------------------------// 下面的代码用于BootLoader
+// -------------------------------------------------------------// 下面的代码用于BootLoader
 
 void AT24C02_Read_OtaFlag(void)
 {
 	memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
 	AT24C02_Read(0, (uint8_t*)&OTA_Info, OTA_INFOCB_SIZE);
+}
+
+void AT24C02_WriteOTAInfo(void)
+{
+	uint8_t *wptr;
+
+	wptr = (uint8_t*)&OTA_Info;
+	for(uint8_t i = 0; i < OTA_INFOCB_SIZE/16; i++)
+	{
+		AT24C02_WritePage(i*16, wptr + i*16);
+		Delay_ms(5);
+	}
 }

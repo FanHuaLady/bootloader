@@ -19,10 +19,16 @@
 
 typedef struct{
     uint32_t OTA_Flag;
+    uint32_t Firelen[11];
 }OTA_InfoCB;
-
 #define OTA_INFOCB_SIZE      sizeof(OTA_InfoCB)
 
+typedef struct{
+    uint8_t UpDataBuff[STM32_PAGE_SIZE];
+    uint32_t W25Q64_BlockID;
+}UpDataA_CB;
+
 extern OTA_InfoCB OTA_Info;
+extern UpDataA_CB UpDataA;
 
 #endif

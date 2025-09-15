@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 OTA_InfoCB OTA_Info;
+UpDataA_CB UpDataA;
 
 int main(void)
 {
@@ -21,7 +22,7 @@ int main(void)
 	AT24C02_Init();
 	W25Q64_Init();
 
-	AT24C02_Read_OtaFlag();    // 读取OTA标志
+	AT24C02_Read_OtaFlag();
 	BootLoader_Branch();
 
 	while(1)
