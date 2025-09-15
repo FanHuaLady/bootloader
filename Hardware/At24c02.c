@@ -167,13 +167,14 @@ uint8_t AT24C02_WritePage(uint8_t addr, uint8_t *data)
 		return 2;												// 返回2，表示写入失败
 	}
 	
-	for (int i = 0; i < 8; i++)									// 循环8次，依次发送8位数据
+	// 核心修改：循环从8次改为16次，固定写入16字节（适配16字节页）
+	for (int i = 0; i < 16; i++)								
 	{
-		AT24C02_Send_Byte(data[i]);								// 发送数据
+		AT24C02_Send_Byte(data[i]);								// 发送数据（第i个字节）
 		if (AT24C02_Wait_Ack(1000) != 0)						// 等待从机应答
 		{
 			AT24C02_Stop();										// 发送终止信号
-			return 3 + i;										// 返回3+i，表示写入失败
+			return 3 + i;										// 返回3+i，表示第i个字节写入失败
 		}
 	}
 	

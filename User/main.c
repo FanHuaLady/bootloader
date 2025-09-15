@@ -22,7 +22,22 @@ int main(void)
 	AT24C02_Init();
 	W25Q64_Init();
 
+	OTA_Info.OTA_Flag = 0xAABB1122;
+	for(uint8_t i=0; i<11; i++)
+	{
+		OTA_Info.Firelen[i] = 0x55;
+	}
+
+	AT24C02_WriteOTAInfo();
 	AT24C02_Read_OtaFlag();
+
+	printf("%x\r\n", OTA_Info.OTA_Flag);
+
+	for(uint8_t i=0; i<11; i++)
+	{
+		printf("%x\r\n", OTA_Info.Firelen[i]);
+	}
+
 	BootLoader_Branch();
 
 	while(1)

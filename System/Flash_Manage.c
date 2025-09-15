@@ -1,6 +1,6 @@
 #include "Flash_Manage.h"
 
-void Flower_Erase_Flash(uint16_t start,uint16_t num)
+void Boot_Erase_Flash(uint16_t start,uint16_t num)
 {
     FLASH_Unlock();
     for (uint16_t i = 0; i < num; i++)
@@ -10,7 +10,7 @@ void Flower_Erase_Flash(uint16_t start,uint16_t num)
     FLASH_Lock();
 }
 
-void Flower_Write_Flash(uint32_t addr,uint32_t *data,uint32_t num)
+void Boot_Write_Flash(uint32_t addr,uint32_t *data,uint32_t num)
 {
     FLASH_Unlock();
     while (num)
