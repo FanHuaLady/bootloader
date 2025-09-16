@@ -21,6 +21,9 @@ typedef struct{
     uint8_t nextPacketIndex;            // 下一个将被填充的数据包索引
 }UCB_CB;
 
+extern UCB_CB U0CB;
+extern uint8_t U0_RxBuff[U0_RX_SIZE];
+
 void Serial_Init(void);
 
 #endif

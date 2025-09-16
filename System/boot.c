@@ -13,17 +13,27 @@ load_a load_A;
 
 void BootLoader_Branch(void)
 {
-    if(OTA_Info.OTA_Flag == OTA_SET_FLAG)                                       // 有新固件
+    if (BootLoader_Enter(20) == 0)
     {
-        printf("Jump to BootLoader...");
-        BootStartFlag |= UPDATA_A_FLAG;                                         // 设置更新标志
-        UpDataA.W25Q64_BlockID = 0;                                             // 默认更新第0块
+        if(OTA_Info.OTA_Flag == OTA_SET_FLAG)                                       // 有新固件
+        {
+            printf("Jump to BootLoader...\r\n");
+            BootStartFlag |= UPDATA_A_FLAG;                                         // 设置更新标志
+            UpDataA.W25Q64_BlockID = 0;                                             // 默认更新第0块
+        }
+        else
+        {
+            printf("Jump to UserApp...\r\n");
+            LOAD_A(STM32_A_SADDR);                                                  // 跳转到用户程序
+        }
     }
     else
     {
-        printf("Jump to UserApp...");
-        LOAD_A(STM32_A_SADDR);                                                  // 跳转到用户程序
+        printf("Jump to CommandLine...\r\n");
+        BootLoader_Info();
     }
+    
+    
 }
 
 // __asm：关键字，告诉编译器这是一段内嵌汇编代码
@@ -62,4 +72,30 @@ void BootLoader_Clear(void)
     USART_DeInit(USART1);
     GPIO_DeInit(GPIOA);
     GPIO_DeInit(GPIOB);
+}
+
+uint8_t BootLoader_Enter(uint8_t timeout)
+{
+    printf("Enter the lowercase letter 'w' within %dms to enter BootLoader\r\n",timeout * 100);
+    while (timeout--)
+    {
+        Delay_ms(100);
+        if(U0_RxBuff[0] == 'w')
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void BootLoader_Info(void)
+{
+    printf("\r\n");
+    printf("[1]Erase Area A\r\n");
+    printf("[2]UART IAP Download Program to Area A\r\n");
+    printf("[3]Set OTA Version Number\r\n");
+    printf("[4]Query OTA Version Number\r\n");
+    printf("[5]Download Program to External Flash\r\n");
+    printf("[6]Use Program in External Flash\r\n");
+    printf("[7]Reboot\r\n");
 }
