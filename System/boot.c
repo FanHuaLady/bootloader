@@ -101,16 +101,26 @@ void BootLoader_Info(void)
 
 void BootLoader_Event(uint8_t *data, uint16_t len)
 {
-    if(len == 1 && data[0] == '1')
+    if (BootStartFlag == 0)
     {
-        printf("Erase Area A\r\n");
-        Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);
-    }
-    else if(len == 1 && data[0] == '7')
-    {
-        printf("Reboot\r\n");
-        Delay_ms(100);
-        NVIC_SystemReset();
+        if(len == 1 && data[0] == '1')
+        {
+            printf("Erase Area A\r\n");
+            Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);
+        }
+        else if(len == 1 && data[0] == '2')
+        {
+            printf("Please use a bin format file for UART IAP\r\n");
+            Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);      // 擦除A区
+            BootStartFlag |= IAP_XMODEMC_FLAG;
+            UpDataA.XmodemTimer = 0;
+        }
+        else if(len == 1 && data[0] == '7')
+        {
+            printf("Reboot\r\n");
+            Delay_ms(100);
+            NVIC_SystemReset();
+        }
     }
 }
 

@@ -31,6 +31,8 @@ int main(void)
 
 	while(1)
 	{
+		Delay_ms(10);
+
 		if (U0CB.URxDataOUT != U0CB.URxDataIN)
 		{
 			printf("\r\n");
@@ -40,6 +42,16 @@ int main(void)
 			{
 				U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
 			}
+		}
+
+		if(BootStartFlag & IAP_XMODEMC_FLAG)
+		{
+			if(UpDataA.XmodemTimer >= 100)
+			{
+				printf("C");
+				UpDataA.XmodemTimer = 0;
+			}
+			UpDataA.XmodemTimer++;
 		}
 
 		if(BootStartFlag & UPDATA_A_FLAG)									// 需要更新A区
