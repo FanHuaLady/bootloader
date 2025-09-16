@@ -140,14 +140,11 @@ void Draw_Serial_Page(void)
     OLED_Update();
 }
 
-// 打印当前所有有效数据包的内容（支持十六进制+字符双格式显示）
-// 打印当前所有有效数据包的内容（支持十六进制+字符双格式显示）
-// 简化版：只显示数据内容
+// 简化版：移除所有打印逻辑，保留函数结构（可按需删除整个函数）
 void Test_PrintReceivedData(void)
 {
     uint8_t i;
     uint8_t temp_buf[U0_RX_MAX + 1];
-    uint8_t has_valid = 0;
 
     // 遍历所有数据包
     for (i = 0; i < NUM; i++)
@@ -163,7 +160,7 @@ void Test_PrintReceivedData(void)
             // 清空临时缓冲区
             memset(temp_buf, 0, sizeof(temp_buf));
 
-            // 读取数据包内容到临时缓冲区
+            // 读取数据包内容到临时缓冲区（保留数据读取逻辑，可按需删除）
             if (start_ptr <= end_ptr)
             {
                 // 数据连续（无跨缓冲区）
@@ -195,28 +192,9 @@ void Test_PrintReceivedData(void)
                 }
             }
 
-            // 确保字符串以null结尾
+            // 确保字符串以null结尾（保留，若删除数据读取逻辑可一并删除）
             temp_buf[read_cnt] = '\0';
-
-            // 只打印数据内容，将非可打印字符替换为点
-            printf("Packet %d: ", i);
-            for(uint16_t j = 0; j < read_cnt; j++)
-            {
-                if(temp_buf[j] >= 0x20 && temp_buf[j] <= 0x7E)
-                    printf("%c", temp_buf[j]);
-                else
-                    printf(".");
-            }
-            printf("\r\n");
-            
-            has_valid = 1;
         }
-    }
-
-    // 无有效数据包时提示
-    if (!has_valid)
-    {
-        printf("No valid packets\r\n");
     }
 }
 
@@ -231,7 +209,7 @@ void Serial_Page(void)
 		if (delay <= 0)
 		{
 			delay = 100;
-			Test_PrintReceivedData();
+			Test_PrintReceivedData();  // 函数内已无打印，可按需删除此调用
 		}
     }
 }

@@ -17,8 +17,6 @@ uint32_t BootStartFlag;
 
 int main(void)
 {
-	uint32_t i;
-
 	// 初始化外设
 	OLED_Init();
 	Serial_Init();
@@ -35,7 +33,6 @@ int main(void)
 
 		if (U0CB.URxDataOUT != U0CB.URxDataIN)
 		{
-			printf("\r\n");
 			BootLoader_Event(U0CB.URxDataOUT->start, U0CB.URxDataOUT->end - U0CB.URxDataOUT->start + 1);
 			U0CB.URxDataOUT++;
 			if (U0CB.URxDataOUT == U0CB.URxDataEND)
@@ -44,16 +41,20 @@ int main(void)
 			}
 		}
 
-		if(BootStartFlag & IAP_XMODEMC_FLAG)
+		if(BootStartFlag & IAP_XMODEMC_FLAG)								// 如果发C标志位被置了
 		{
 			if(UpDataA.XmodemTimer >= 100)
 			{
-				printf("C");
+				printf("C");												// 发送C
 				UpDataA.XmodemTimer = 0;
 			}
 			UpDataA.XmodemTimer++;
 		}
-
+		
+		Test_PrintReceivedData();
+		Draw_Serial_Page();
+		
+		/*
 		if(BootStartFlag & UPDATA_A_FLAG)									// 需要更新A区
 		{
 			printf("长度%d字节\r\n", OTA_Info.Firelen[UpDataA.W25Q64_BlockID]);
@@ -95,5 +96,6 @@ int main(void)
 				BootStartFlag &= ~UPDATA_A_FLAG;
 			}
 		}
+		*/
 	}
 }

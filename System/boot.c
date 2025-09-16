@@ -8,6 +8,7 @@
 #include "Flash_Manage.h"
 
 #include <stdio.h>
+#include <string.h>
 
 load_a load_A;
 
@@ -101,7 +102,7 @@ void BootLoader_Info(void)
 
 void BootLoader_Event(uint8_t *data, uint16_t len)
 {
-    if (BootStartFlag == 0)
+    if (BootStartFlag == 0)                                             // 未开始OTA
     {
         if(len == 1 && data[0] == '1')
         {
@@ -112,12 +113,50 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
         {
             printf("Please use a bin format file for UART IAP\r\n");
             Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);      // 擦除A区
-            BootStartFlag |= IAP_XMODEMC_FLAG;
+            BootStartFlag |= (IAP_XMODEMC_FLAG | IAP_XMODEMD_FLAG);     // 开始发送C + 
             UpDataA.XmodemTimer = 0;
+            UpDataA.XmodemID = 0;
         }
         else if(len == 1 && data[0] == '7')
         {
             printf("Reboot\r\n");
+            Delay_ms(100);
+            NVIC_SystemReset();
+        }
+    }
+
+    if (BootStartFlag & IAP_XMODEMD_FLAG)
+    {
+        if(len == 133 && data[0] == 0x01)                               // 接收到长度为133的包 且首字节为0x01
+        {
+            BootStartFlag &=~ IAP_XMODEMC_FLAG;                         // 停止发送C
+            UpDataA.XmodemCRC = Xmodem_CRC16(&data[3],128);             // 对数据包有效的部分进行校验
+            if (UpDataA.XmodemCRC == data[131] * 256 + data[132])		// CRC校验通过
+            {
+                UpDataA.XmodemID++;										// 进行下一包
+                memcpy(&UpDataA.UpDataBuff[((UpDataA.XmodemID - 1) % (STM32_PAGE_SIZE / 128)) * 128],&data[3],128);
+                if ((UpDataA.XmodemID % (STM32_PAGE_SIZE / 128)) == 0)  // 发现成功凑了8个包
+                {
+                    Boot_Write_Flash(STM32_A_SADDR + ((UpDataA.XmodemID / (STM32_PAGE_SIZE / 128)) - 1) * STM32_PAGE_SIZE,
+                                    (uint32_t *)UpDataA.UpDataBuff, STM32_PAGE_SIZE);
+                }
+                printf("\x06");											// 能连续接包,说明校验通过了
+            }
+            else
+            {
+                printf("\x15");                                         // 表示校验未通过
+            }
+        }
+        if (len == 1 && data[0] == 0x04)
+        {
+            printf("\x06");
+            if ((UpDataA.XmodemID % (STM32_PAGE_SIZE / 128)) != 0)
+            {
+                Boot_Write_Flash(STM32_A_SADDR + ((UpDataA.XmodemID / (STM32_PAGE_SIZE / 128))) * STM32_PAGE_SIZE,
+                                (uint32_t *)UpDataA.UpDataBuff, 
+                                (UpDataA.XmodemID % (STM32_PAGE_SIZE / 128)) * 128);
+            }
+            BootStartFlag &=~ IAP_XMODEMD_FLAG;                         // 不用发数据了
             Delay_ms(100);
             NVIC_SystemReset();
         }

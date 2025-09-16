@@ -16,7 +16,8 @@
 #define STM32_A_SADDR           STM32_FLASH_SADDR + STM32_A_START_PAGE * STM32_PAGE_SIZE    // A区起始地址
 
 #define UPDATA_A_FLAG           0x00000001                                                  // B区更新A区标志
-#define IAP_XMODEMC_FLAG        0x00000002
+#define IAP_XMODEMC_FLAG        0x00000002                                                  // 发送C标志位
+#define IAP_XMODEMD_FLAG        0x00000004                                                  // 
 
 #define OTA_SET_FLAG            0xAABB1122                                                  // 有新固件标志
 
@@ -35,6 +36,8 @@ typedef struct{
     uint8_t UpDataBuff[STM32_PAGE_SIZE];                // 用于存放从W25Q64读取的数据       // 一次更新1024字节
     uint32_t W25Q64_BlockID;                            // W25Q64块编号，0~10
     uint32_t XmodemTimer;                               // 延时
+    uint32_t XmodemID;                                  // 保存当前接收了几个包
+    uint32_t XmodemCRC;                                 // CRC校验
 }UpDataA_CB;                                            // 用于存放更新数据的结构体
 
 extern OTA_InfoCB OTA_Info;
