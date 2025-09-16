@@ -27,13 +27,8 @@ void BootLoader_Branch(void)
             LOAD_A(STM32_A_SADDR);                                                  // 跳转到用户程序
         }
     }
-    else
-    {
-        printf("Jump to CommandLine...\r\n");
-        BootLoader_Info();
-    }
-    
-    
+    printf("Jump to CommandLine...\r\n");
+    BootLoader_Info();
 }
 
 // __asm：关键字，告诉编译器这是一段内嵌汇编代码
@@ -64,6 +59,10 @@ void LOAD_A(uint32_t addr)
         MSR_SP(*(uint32_t *)addr);
         load_A = (load_a)*(uint32_t *)(addr + 4);
         load_A();
+    }
+    else
+    {
+        printf("Jump to Partition A failed\r");
     }
 }
 
@@ -98,4 +97,43 @@ void BootLoader_Info(void)
     printf("[5]Download Program to External Flash\r\n");
     printf("[6]Use Program in External Flash\r\n");
     printf("[7]Reboot\r\n");
+}
+
+void BootLoader_Event(uint8_t *data, uint16_t len)
+{
+    if(len == 1 && data[0] == '1')
+    {
+        printf("Erase Area A\r\n");
+        Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);
+    }
+    else if(len == 1 && data[0] == '7')
+    {
+        printf("Reboot\r\n");
+        Delay_ms(100);
+        NVIC_SystemReset();
+    }
+}
+
+uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len)
+{
+    uint16_t Crcinit = 0x0000;
+    uint16_t Crcipoly = 0x1021;
+
+    while(len--)
+    {
+        Crcinit = (*data << 8) ^ Crcinit;
+        for(uint8_t i = 0; i < 8; i++)
+        {
+            if (Crcinit & 0x8000)
+            {
+                Crcinit = (Crcinit << 1) ^ Crcipoly;
+            }
+            else
+            {
+                Crcinit = (Crcinit << 1);
+            }
+        }
+        data++;
+    }
+    return Crcinit;
 }

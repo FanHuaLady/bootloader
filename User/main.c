@@ -31,6 +31,17 @@ int main(void)
 
 	while(1)
 	{
+		if (U0CB.URxDataOUT != U0CB.URxDataIN)
+		{
+			printf("\r\n");
+			BootLoader_Event(U0CB.URxDataOUT->start, U0CB.URxDataOUT->end - U0CB.URxDataOUT->start + 1);
+			U0CB.URxDataOUT++;
+			if (U0CB.URxDataOUT == U0CB.URxDataEND)
+			{
+				U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
+			}
+		}
+
 		if(BootStartFlag & UPDATA_A_FLAG)									// 需要更新A区
 		{
 			printf("长度%d字节\r\n", OTA_Info.Firelen[UpDataA.W25Q64_BlockID]);

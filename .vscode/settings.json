@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "string": "c",
+        "array": "c",
+        "string_view": "c",
+        "stm32f10x.h": "c"
+    }
+}
