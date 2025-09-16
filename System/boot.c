@@ -13,9 +13,11 @@ load_a load_A;
 
 void BootLoader_Branch(void)
 {
-    if(OTA_Info.OTA_Flag == OTA_SET_FLAG)
+    if(OTA_Info.OTA_Flag == OTA_SET_FLAG)                                       // 有新固件
     {
         printf("Jump to BootLoader...");
+        BootStartFlag |= UPDATA_A_FLAG;                                         // 设置更新标志
+        UpDataA.W25Q64_BlockID = 0;                                             // 默认更新第0块
     }
     else
     {
