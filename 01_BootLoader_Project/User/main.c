@@ -15,8 +15,6 @@ OTA_InfoCB OTA_Info;
 UpDataA_CB UpDataA;
 uint32_t BootStartFlag;
 
-uint8_t DebugFlag;
-
 int main(void)
 {
 	// 初始化外设

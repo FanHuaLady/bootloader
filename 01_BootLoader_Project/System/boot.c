@@ -126,7 +126,9 @@ void BootLoader_Info(void)
 
 void BootLoader_Event(uint8_t *data, uint16_t len)
 {
-    if (BootStartFlag == 0 && DebugFlag == 0)                           // 未开始OTA
+    int temp;
+
+    if (BootStartFlag == 0)                                             // 未开始OTA
     {
         if(len == 1 && data[0] == '1')
         {
@@ -143,9 +145,14 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
         }
 		else if(len == 1 && data[0] == '3')
         {
-            printf("Debug\r\n");
-			DebugFlag = 1;
-            
+            printf("Set Version Number\r\n");
+            BootStartFlag |= SET_VERSION_FLAG;
+        }
+        else if(len == 1 && data[0] == '4')
+        {
+            AT24C02_Read_OtaFlag();
+            printf("Version number:%s\r\n",OTA_Info.OTA_ver);
+            BootLoader_Info();
         }
         else if(len == 1 && data[0] == '7')
         {
@@ -155,7 +162,7 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
         }
     }
 
-    if (BootStartFlag & IAP_XMODEMD_FLAG)
+    else if (BootStartFlag & IAP_XMODEMD_FLAG)
     {
         if(len == 133 && data[0] == 0x01)                               // 接收到长度为133的包 且首字节为0x01
         {
@@ -191,11 +198,30 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
             NVIC_SystemReset();
         }
 	}
-	
-	if (DebugFlag == 1)
-	{
-		PrintReceivedData(data, len);
-	}
+
+    else if (BootStartFlag & SET_VERSION_FLAG)
+    {
+        if (len == 26)
+        {
+            if(sscanf((char *)data,"VER-%d.%d.%d-%d/%d/%d-%d:%d",&temp,&temp,&temp,&temp,&temp,&temp,&temp,&temp) == 8)
+            {
+                memset(OTA_Info.OTA_ver,0,32);
+                memcpy(OTA_Info.OTA_ver,data,26);
+                AT24C02_WriteOTAInfo();
+                printf("Version Number Updated\r\n");
+                BootStartFlag &=~ SET_VERSION_FLAG;
+            }
+            else
+            {
+                printf("Version number format error\r\n");
+            }
+        }
+        else
+        {
+            printf("Version number length error\r\n");
+        }
+    }
+
 }
 
 uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len)
@@ -222,6 +248,7 @@ uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len)
     return Crcinit;
 }
 
+// 调试函数
 void PrintReceivedData(uint8_t *data, uint16_t len)
 {
     printf("Received %d bytes:\r\n", len);
