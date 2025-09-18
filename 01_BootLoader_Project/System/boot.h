@@ -12,5 +12,5 @@ uint8_t BootLoader_Enter(uint8_t timeout);
 void BootLoader_Info(void);
 void BootLoader_Event(uint8_t *data, uint16_t len);
 uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len);
-
+void PrintReceivedData(uint8_t *data, uint16_t len);
 #endif

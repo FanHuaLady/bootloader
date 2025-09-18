@@ -44,4 +44,6 @@ extern OTA_InfoCB OTA_Info;
 extern UpDataA_CB UpDataA;
 extern uint32_t BootStartFlag;
 
+extern uint8_t DebugFlag;
+
 #endif

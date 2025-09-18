@@ -3,12 +3,12 @@
         {
             "name": "Target 1",
             "includePath": [
-                "e:\\github\\11_BootLoader\\Start",
-                "e:\\github\\11_BootLoader\\Library",
-                "e:\\github\\11_BootLoader\\User",
-                "e:\\github\\11_BootLoader\\System",
-                "e:\\github\\11_BootLoader\\Hardware",
-                "e:\\github\\11_BootLoader\\App",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\Start",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\Library",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\User",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\System",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\Hardware",
+                "e:\\github\\11_BootLoader\\01_BootLoader_Project\\App",
                 "D:\\Keil5M\\ARM\\ARMCC\\include",
                 "D:\\Keil5M\\ARM\\ARMCC\\include\\rw"
             ],

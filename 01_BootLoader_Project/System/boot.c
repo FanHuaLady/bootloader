@@ -57,21 +57,45 @@ void LOAD_A(uint32_t addr)
 
     if (*(uint32_t *)addr >= 0x20000000 && (*(uint32_t *)addr <= 0x20004FFF))
     {
+		BootLoader_Clear();
+		
         MSR_SP(*(uint32_t *)addr);
+		
+		/*
+		uint32_t offset = addr - STM32_FLASH_SADDR;
+        NVIC_SetVectorTable(NVIC_VectTab_FLASH, offset);
+		*/
+		
         load_A = (load_a)*(uint32_t *)(addr + 4);
         load_A();
     }
     else
     {
         printf("Jump to Partition A failed\r");
+		BootLoader_Clear();
     }
 }
 
 void BootLoader_Clear(void)
 {
+    // 1. 反初始化USART1相关
     USART_DeInit(USART1);
+    NVIC_DisableIRQ(USART1_IRQn);  // 禁用USART1中断
+    
+    // 2. 反初始化SPI1（W25Q64使用）
+    SPI_I2S_DeInit(SPI1);
+    
+    // 3. 反初始化DMA1通道5（USART1接收用）
+    DMA_DeInit(DMA1_Channel5);
+    
+    // 4. 反初始化GPIO
     GPIO_DeInit(GPIOA);
     GPIO_DeInit(GPIOB);
+    
+    // 5. 关闭外设时钟，避免持续占用
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_SPI1 | 
+                          RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, DISABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, DISABLE);
 }
 
 uint8_t BootLoader_Enter(uint8_t timeout)
@@ -102,7 +126,7 @@ void BootLoader_Info(void)
 
 void BootLoader_Event(uint8_t *data, uint16_t len)
 {
-    if (BootStartFlag == 0)                                             // 未开始OTA
+    if (BootStartFlag == 0 && DebugFlag == 0)                           // 未开始OTA
     {
         if(len == 1 && data[0] == '1')
         {
@@ -116,6 +140,12 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
             BootStartFlag |= (IAP_XMODEMC_FLAG | IAP_XMODEMD_FLAG);     // 开始发送C + 
             UpDataA.XmodemTimer = 0;
             UpDataA.XmodemID = 0;
+        }
+		else if(len == 1 && data[0] == '3')
+        {
+            printf("Debug\r\n");
+			DebugFlag = 1;
+            
         }
         else if(len == 1 && data[0] == '7')
         {
@@ -160,7 +190,12 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
             Delay_ms(100);
             NVIC_SystemReset();
         }
-    }
+	}
+	
+	if (DebugFlag == 1)
+	{
+		PrintReceivedData(data, len);
+	}
 }
 
 uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len)
@@ -185,4 +220,78 @@ uint16_t Xmodem_CRC16(uint8_t *data, uint16_t len)
         data++;
     }
     return Crcinit;
+}
+
+void PrintReceivedData(uint8_t *data, uint16_t len)
+{
+    printf("Received %d bytes:\r\n", len);
+    printf("Offset    Hex Data                              ASCII\r\n");
+    printf("--------  ------------------------------------  ----------------\r\n");
+    
+    for(uint16_t i = 0; i < len; i++)
+    {
+        // 每行显示16个字节
+        if(i % 16 == 0)
+        {
+            // 如果不是第一行，先打印上一行的ASCII表示
+            if(i != 0)
+            {
+                printf("  ");
+                for(uint16_t j = i - 16; j < i; j++)
+                {
+                    if(data[j] >= 32 && data[j] <= 126) // 可打印字符
+                        printf("%c", data[j]);
+                    else
+                        printf(".");
+                }
+                printf("\r\n");
+            }
+            
+            // 打印新行的偏移量
+            printf("%08X  ", i);
+        }
+        
+        // 打印十六进制值
+        printf("%02X ", data[i]);
+        
+        // 在8字节后添加额外空格，提高可读性
+        if(i % 8 == 7)
+            printf(" ");
+    }
+    
+    // 处理最后一行可能不满16字节的情况
+    uint16_t remaining = len % 16;
+    if(remaining != 0)
+    {
+        // 填充空格使ASCII列对齐
+        for(uint16_t i = remaining; i < 16; i++)
+        {
+            printf("   ");
+            if(i % 8 == 7)
+                printf(" ");
+        }
+        
+        printf("  ");
+        for(uint16_t i = len - remaining; i < len; i++)
+        {
+            if(data[i] >= 32 && data[i] <= 126) // 可打印字符
+                printf("%c", data[i]);
+            else
+                printf(".");
+        }
+    }
+    else
+    {
+        // 处理完整的最后一行
+        printf("  ");
+        for(uint16_t i = len - 16; i < len; i++)
+        {
+            if(data[i] >= 32 && data[i] <= 126) // 可打印字符
+                printf("%c", data[i]);
+            else
+                printf(".");
+        }
+    }
+    
+    printf("\r\n--------  ------------------------------------  ----------------\r\n");
 }

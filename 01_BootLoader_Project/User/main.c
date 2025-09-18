@@ -15,6 +15,8 @@ OTA_InfoCB OTA_Info;
 UpDataA_CB UpDataA;
 uint32_t BootStartFlag;
 
+uint8_t DebugFlag;
+
 int main(void)
 {
 	// 初始化外设
@@ -26,21 +28,32 @@ int main(void)
 	// BootLoader操作
 	AT24C02_Read_OtaFlag();													// 读取OTA标志
 	BootLoader_Branch();													// 判断跳转还是更新
-
+	
 	while(1)
 	{
 		Delay_ms(10);
 
-		if (U0CB.URxDataOUT != U0CB.URxDataIN)
-		{
-			BootLoader_Event(U0CB.URxDataOUT->start, U0CB.URxDataOUT->end - U0CB.URxDataOUT->start + 1);
-			U0CB.URxDataOUT++;
-			if (U0CB.URxDataOUT == U0CB.URxDataEND)
-			{
-				U0CB.URxDataOUT = &U0CB.URxDataPtr[0];
-			}
-		}
-
+		if (U0CB.packetValid[U0CB.URxDataOUT - U0CB.URxDataPtr])
+        {
+            uint8_t currentIndex = U0CB.URxDataOUT - U0CB.URxDataPtr;
+            
+            uint16_t dataLen;
+            if (U0CB.URxDataOUT->start <= U0CB.URxDataOUT->end)
+            {
+                dataLen = (uint16_t)(U0CB.URxDataOUT->end - U0CB.URxDataOUT->start + 1);
+            }
+            else
+            {
+                dataLen = (uint16_t)((U0_RxBuff + U0_RX_SIZE - U0CB.URxDataOUT->start) 
+                                  + (U0CB.URxDataOUT->end - U0_RxBuff + 1));
+            }
+            if (dataLen <= U0_RX_MAX)
+            {
+                BootLoader_Event(U0CB.URxDataOUT->start, dataLen);
+            }
+            MarkPacketProcessed(currentIndex);
+        }
+		
 		if(BootStartFlag & IAP_XMODEMC_FLAG)								// 如果发C标志位被置了
 		{
 			if(UpDataA.XmodemTimer >= 100)
@@ -51,7 +64,6 @@ int main(void)
 			UpDataA.XmodemTimer++;
 		}
 		
-		Test_PrintReceivedData();
 		Draw_Serial_Page();
 		
 		/*

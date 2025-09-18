@@ -25,5 +25,6 @@ extern UCB_CB U0CB;
 extern uint8_t U0_RxBuff[U0_RX_SIZE];
 
 void Serial_Init(void);
+void MarkPacketProcessed(uint8_t index);
 
 #endif
