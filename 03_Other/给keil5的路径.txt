@@ -1,1 +1,0 @@
-D:\Keil5M\ARM\ARMCC\bin\fromelf.exe --bin --output E:\github\3_BootLoaderAPP\01_BootLoader_Project\Project.bin .\Objects\Project.axf
