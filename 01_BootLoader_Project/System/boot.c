@@ -133,7 +133,7 @@ void BootLoader_Event(uint8_t *data, uint16_t len)
         if(len == 1 && data[0] == '1')
         {
             printf("Erase Area A\r\n");
-            Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);
+            Boot_Erase_Flash(STM32_A_START_PAGE,STM32_A_PAGE_NUM);      //
         }
         else if(len == 1 && data[0] == '2')
         {
